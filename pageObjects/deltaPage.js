@@ -1,37 +1,97 @@
 let deltaCommands = {
-    fillOutAndVerify: function (data) {
+    departArriveAirport: function (data) {
         this
             .click('@fromAirport')
             .setValue('@cityInput', data.from)
+            .waitForElementPresent('@searchExample')
             .click('@searchExample')
             .click('@toAirport')
             .setValue('@cityInput', data.to)
             .click('@searchExample')
+            .verify.containsText('@fromAirport', data.from)
+            .verify.containsText('@toAirport', data.to)
+        return this
+    },
+    tripData: function (data) {
+        this
             .click('@tripType')
-            .click(data.trip)
-            .click('@departReturn')
-            .useXpath()
-            .click(`//a[@aria-label="${data.departDate}"]`)
-            .click(`//a[@aria-label="${data.returnDate}"]`)
-            .click('@doneButton')
+            .pause(500)
+        switch (data.trip) {
+            case '@roundTrip':
+                this
+                    .click('@roundTrip')
+                    .click('@departReturn')
+                    .useXpath()
+                    .click(`//a[@aria-label="${data.departDate}"]`)
+                    .click(`//a[@aria-label="${data.returnDate}"]`)
+                break
+            case '@oneWay':
+                this
+                    .click('@oneWay')
+                    .click('@departReturn')
+                    .useXpath()
+                    .click(`//a[@aria-label="${data.departDate}"]`)
+                break
+        }
+
+
+        return this
+    },
+
+    finishFill: function (data) {
+        this
             .click('@passengerList')
+            .pause(500)
             .click(data.passengers)
             .pause(500)
             //otherstuff
             .click('@advSearch')
-            .click(data.price)
+        switch (data.price) {
+            case '@shopWithMileschk':
+                this
+                    .click(data.price)
+                break
+            case 'cash':
+                this
+                break
+        }
+        this
             .click('@fareList')
+            .pause(500)
             .click(data.fare)
             .verify.containsText('@fareList', data.fareVer)
-            .verify.containsText('@fromAirport', data.from)
-            .verify.containsText('@toAirport', data.to)
+            .pause(500)
             .click('@submitButton')
-            .pause(5000)
-            .verify.containsText('@selectedDate', data.priceVer)
-        return this
-    }
+            .pause(10000)
+        switch (data.price) {
+            case '@shopWithMileschk':
+                this
+                    .verify.containsText('@selectedDate', data.priceVer)
+                    .moveToElement('@exactMatch', 10, 10)
+                    .verify.containsText('@exactMatch', data.priceVer2)
+                //     if () {
+                //         this
+                //         .verify.containsText('@selectedDate', data.priceVer)
+                //     } else{
+                //         this
+                //         .moveToElement('@exactMatch', 10, 10)
+                //         .verify.containsText('@exactMatch', data.priceVer)
 
+                //     }
+                break
+            case 'cash':
+                this
+                    .pause(5000)
+                    .waitForElementPresent('@cashCell')
+                    .verify.containsText('@cashCell', data.priceVer)
+        }
+        return this
+
+            .pause(1000)
+    }
 }
+
+
 module.exports = {
     url: 'https://www.delta.com',
     commands: [deltaCommands],
@@ -41,12 +101,27 @@ module.exports = {
             to: 'SLC',
             trip: '@roundTrip',
             departDate: '26 September 2019, Thursday',
-            returnDate: '30 September 2019, Monday',
+            returnDate: '27 September 2019, Friday',
             passengers: '@passengers2',
-            price: '@miles',
+            price: '@shopWithMileschk',
             priceVer: "MILES",
+            priceVer2:"Miles",
             fare: '@mainCabin',
             fareVer: "Main Cabin"
+
+        }],
+    var: flight2 = [
+        {
+            from: 'AUS',
+            to: 'NYC',
+            trip: '@oneWay',
+            departDate: '24 September 2019, Tuesday',
+            // returnDate: '30 September 2019, Monday',
+            passengers: '@passengers1',
+            price: 'cash',
+            priceVer: "$",
+            fare: '@firstClass',
+            fareVer: "First Class"
 
         }],
     elements: {
@@ -72,7 +147,11 @@ module.exports = {
             locateStrategy: 'xpath'
         },
         departReturn: {
-            selector: '//div[@id="input_departureDate_1"]',
+            selector: '//div[@aria-describedby="calDepartLabelCont calReturnLabelCont"]',
+            locateStrategy: 'xpath'
+        },
+        return: {
+            selector: '//div[@id="input_returnDate_1"]',
             locateStrategy: 'xpath'
         },
         doneButton: {
@@ -99,11 +178,35 @@ module.exports = {
             selector: '//td[@class="forHover selectedCell ng-star-inserted"]',
             locateStrategy: 'xpath'
         },
+        exactMatch: {
+            selector: '//td[@class="forHover exactMatchCell"]',
+            locateStrategy: 'xpath'
 
-
+        },
+        cashCell: {
+            selector: '(//span[text()="$"])[3]',
+            locateStrategy: 'xpath'
+        },
+        results1: {
+            selector: '//div[@class="container containerCustom ng-star-inserted"]',
+            locateStrategy: 'xpath'
+        },
+        
         //flight data selectors
+        roundTrip: {
+            selector: '//li[@id="ui-list-selectTripType0"]',
+            locateStrategy: 'xpath'
+        },
+        oneWay: {
+            selector: '//li[@id="ui-list-selectTripType1"]',
+            locateStrategy: 'xpath'
+        },
         passengers2: {
             selector: '//li[@id="ui-list-passengers1"]',
+            locateStrategy: 'xpath'
+        },
+        passengers1: {
+            selector: '//li[@id="ui-list-passengers0"]',
             locateStrategy: 'xpath'
         },
         basicEconomy: {
@@ -114,8 +217,10 @@ module.exports = {
             selector: '//li[@id="ui-list-faresFor1"]',
             locateStrategy: 'xpath'
         },
-        firstClass: {
-            selector: '//li[@id="ui-list-faresFor3"]',
+        //correct selector?
+        firstClass: '#ui-list-faresFor3',
+        shopWithMileschk: {
+            selector: '//label[@for="shopWithMiles"]',
             locateStrategy: 'xpath'
         },
         miles: {
@@ -126,13 +231,10 @@ module.exports = {
             selector: '//label[@id="moneyLabel"]',
             locateStrategy: 'xpath'
         },
-        roundTrip: {
-            selector: '//li[@id="ui-list-selectTripType0"]',
-            locateStrategy: 'xpath'
-        },
 
 
-        
+
+
         element: {
             selector: 'xpathselector',
             locateStrategy: 'xpath'
